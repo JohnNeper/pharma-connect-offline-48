@@ -24,6 +24,7 @@ import {
   Wifi,
   WifiOff,
   Heart,
+  Video,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useTranslation } from 'react-i18next'
@@ -35,6 +36,7 @@ const userRole = "Administrator"
 const useMenuItems = (t: any) => ({
   Administrator: [
     { title: t('dashboard'), url: "/", icon: LayoutDashboard },
+    { title: "Télépharmacie", url: "/telepharmacy", icon: Video },
     { title: t('stock'), url: "/stock", icon: Package },
     { title: t('sales'), url: "/sales", icon: ShoppingCart },
     { title: t('prescriptions'), url: "/prescriptions", icon: Heart },

@@ -6,9 +6,11 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { AuthProvider } from "./contexts/AuthContext";
 import { DataProvider } from "./contexts/DataContext";
+import { TelepharmacyProvider } from "./contexts/TelepharmacyContext";
 import { Layout } from "./components/layout/Layout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
+import Telepharmacy from "./pages/Telepharmacy";
 import StockManagement from "./pages/StockManagement";
 import Sales from "./pages/Sales";
 import Orders from "./pages/Orders";
@@ -30,7 +32,8 @@ const App = () => (
     <ThemeProvider>
       <AuthProvider>
         <DataProvider>
-          <TooltipProvider>
+          <TelepharmacyProvider>
+            <TooltipProvider>
             <Toaster />
             <Sonner />
             <BrowserRouter>
@@ -40,6 +43,13 @@ const App = () => (
                   <ProtectedRoute>
                     <Layout>
                       <Dashboard />
+                    </Layout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/telepharmacy" element={
+                  <ProtectedRoute allowedRoles={['Administrator', 'Pharmacist']}>
+                    <Layout>
+                      <Telepharmacy />
                     </Layout>
                   </ProtectedRoute>
                 } />
@@ -118,6 +128,7 @@ const App = () => (
               </Routes>
             </BrowserRouter>
           </TooltipProvider>
+          </TelepharmacyProvider>
         </DataProvider>
       </AuthProvider>
     </ThemeProvider>
