@@ -3,55 +3,28 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Search, Plus, FileText, User, Calendar, Heart } from "lucide-react"
+import { Search, Plus, FileText, User, Calendar, Heart, Smartphone, Eye } from "lucide-react"
 import { useTranslation } from 'react-i18next'
 import { AddPrescriptionModal } from '@/components/modals/AddPrescriptionModal'
 import { useState } from 'react'
-
-const mockPrescriptions = [
-  {
-    id: "RX-001",
-    patientName: "Marie Dubois",
-    patientAge: 45,
-    doctor: "Dr. Jean Martin",
-    date: "2024-01-15",
-    status: "active",
-    medicines: [
-      { name: "Amoxicilline 500mg", dosage: "3x/jour", duration: "7 jours" },
-      { name: "Paracétamol 1g", dosage: "4x/jour", duration: "5 jours" }
-    ],
-    total: "₣ 45.50"
-  },
-  {
-    id: "RX-002",
-    patientName: "Paul Konaté",
-    patientAge: 62,
-    doctor: "Dr. Aminata Traoré",
-    date: "2024-01-14",
-    status: "completed",
-    medicines: [
-      { name: "Insuline rapide", dosage: "Selon glycémie", duration: "30 jours" }
-    ],
-    total: "₣ 125.00"
-  },
-  {
-    id: "RX-003",
-    patientName: "Fatou Camara",
-    patientAge: 28,
-    doctor: "Dr. Moussa Diallo",
-    date: "2024-01-13",
-    status: "pending",
-    medicines: [
-      { name: "Vitamine D3", dosage: "1x/jour", duration: "30 jours" },
-      { name: "Acide folique", dosage: "1x/jour", duration: "30 jours" }
-    ],
-    total: "₣ 32.75"
-  }
-]
+import { useData } from '@/contexts/DataContext'
 
 export default function Prescriptions() {
   const { t } = useTranslation()
+  const { prescriptions, mobileReservations } = useData()
   const [showAddPrescription, setShowAddPrescription] = useState(false)
+
+  // Combine prescriptions with mobile app origin info
+  const enrichedPrescriptions = prescriptions.map(prescription => {
+    const relatedReservation = mobileReservations.find(res => res.prescriptionId === prescription.id)
+    return {
+      ...prescription,
+      fromMobileApp: !!relatedReservation,
+      reservationId: relatedReservation?.id,
+      patientAge: 35, // Mock age since not in data structure
+      total: `₣ ${(prescription.medicines.length * 25).toFixed(2)}` // Mock calculation
+    }
+  })
 
   const getStatusVariant = (status: string) => {
     switch (status) {
@@ -102,11 +75,14 @@ export default function Prescriptions() {
           <CardTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5" />
             {t('digitalPrescriptions')}
+            <Badge variant="outline" className="ml-auto">
+              {enrichedPrescriptions.filter(p => p.fromMobileApp).length} de l'app mobile
+            </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {mockPrescriptions.map((prescription) => (
+            {enrichedPrescriptions.map((prescription) => (
               <div key={prescription.id} className="border rounded-lg p-4 space-y-4">
                 {/* Header */}
                 <div className="flex items-center justify-between">
@@ -117,10 +93,21 @@ export default function Prescriptions() {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <h3 className="font-semibold">{prescription.patientName}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold">{prescription.patientName}</h3>
+                        {prescription.fromMobileApp && (
+                          <div className="flex items-center gap-1 text-xs text-primary">
+                            <Smartphone className="w-3 h-3" />
+                            <span>App Mobile</span>
+                          </div>
+                        )}
+                      </div>
                       <p className="text-sm text-muted-foreground">
-                        {prescription.patientAge} ans • {prescription.doctor}
+                        {prescription.patientAge} ans • {prescription.doctorName}
                       </p>
+                      {prescription.patientPhone && (
+                        <p className="text-xs text-muted-foreground">{prescription.patientPhone}</p>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -131,6 +118,26 @@ export default function Prescriptions() {
                   </div>
                 </div>
 
+                {/* Mobile App Info */}
+                {prescription.fromMobileApp && (
+                  <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Smartphone className="w-4 h-4 text-blue-600" />
+                        <span className="text-sm font-medium text-blue-600">
+                          Reçu via l'application mobile
+                        </span>
+                      </div>
+                      {prescription.reservationId && (
+                        <Button variant="outline" size="sm">
+                          <Eye className="w-4 h-4 mr-2" />
+                          Voir réservation ({prescription.reservationId})
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* Medicines */}
                 <div className="bg-muted/50 rounded-lg p-3">
                   <h4 className="font-medium mb-2">Médicaments prescrits:</h4>
@@ -139,7 +146,7 @@ export default function Prescriptions() {
                       <div key={index} className="flex items-center justify-between text-sm">
                         <span className="font-medium">{medicine.name}</span>
                         <span className="text-muted-foreground">
-                          {medicine.dosage} • {medicine.duration}
+                          {medicine.instructions} • Quantité: {medicine.quantity}
                         </span>
                       </div>
                     ))}
@@ -176,7 +183,7 @@ export default function Prescriptions() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Ordonnances actives</p>
-                <p className="text-2xl font-bold">89</p>
+                <p className="text-2xl font-bold">{enrichedPrescriptions.filter(p => p.status === 'pending').length}</p>
               </div>
               <Heart className="w-8 h-8 text-primary" />
             </div>
@@ -187,10 +194,10 @@ export default function Prescriptions() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Patients ce mois</p>
-                <p className="text-2xl font-bold">156</p>
+                <p className="text-sm text-muted-foreground">Via app mobile</p>
+                <p className="text-2xl font-bold">{enrichedPrescriptions.filter(p => p.fromMobileApp).length}</p>
               </div>
-              <User className="w-8 h-8 text-success" />
+              <Smartphone className="w-8 h-8 text-blue-600" />
             </div>
           </CardContent>
         </Card>
@@ -200,7 +207,7 @@ export default function Prescriptions() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">En attente</p>
-                <p className="text-2xl font-bold">12</p>
+                <p className="text-2xl font-bold">{enrichedPrescriptions.filter(p => p.status === 'pending').length}</p>
               </div>
               <FileText className="w-8 h-8 text-warning" />
             </div>
@@ -211,10 +218,10 @@ export default function Prescriptions() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Valeur totale</p>
-                <p className="text-2xl font-bold">₣ 34K</p>
+                <p className="text-sm text-muted-foreground">Patients uniques</p>
+                <p className="text-2xl font-bold">{new Set(enrichedPrescriptions.map(p => p.patientName)).size}</p>
               </div>
-              <Calendar className="w-8 h-8 text-primary" />
+              <User className="w-8 h-8 text-success" />
             </div>
           </CardContent>
         </Card>

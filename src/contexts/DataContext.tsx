@@ -72,6 +72,21 @@ export interface Invoice {
   status: 'paid' | 'unpaid' | 'partial'
 }
 
+export interface MobileReservation {
+  id: string
+  customer: string
+  phone: string
+  items: Array<{ name: string; quantity: number; price: number; medicineId: string }>
+  total: number
+  status: "pending" | "ready" | "delivered" | "cancelled"
+  orderDate: string
+  pharmacy: string
+  notes?: string
+  prescriptionId?: string
+  prescriptionAttachment?: string
+  prescriptionFromApp?: boolean
+}
+
 interface DataContextType {
   // Data
   medicines: Medicine[]
@@ -80,6 +95,7 @@ interface DataContextType {
   prescriptions: Prescription[]
   patients: Patient[]
   invoices: Invoice[]
+  mobileReservations: MobileReservation[]
   
   // Medicine operations
   addMedicine: (medicine: Omit<Medicine, 'id'>) => void
@@ -105,6 +121,10 @@ interface DataContextType {
   // Invoice operations
   addInvoice: (invoice: Omit<Invoice, 'id'>) => void
   updateInvoice: (id: string, invoice: Partial<Invoice>) => void
+
+  // Mobile reservations operations
+  addMobileReservation: (reservation: Omit<MobileReservation, 'id'>) => void
+  updateMobileReservation: (id: string, reservation: Partial<MobileReservation>) => void
 }
 
 
@@ -192,6 +212,66 @@ const mockPrescriptions: Prescription[] = [
     date: '2024-01-15',
     status: 'pending',
     medicines: [{ medicineId: '1', quantity: 10, instructions: '1 tablet twice daily', name: 'Paracetamol 500mg' }]
+  },
+  {
+    id: 'PRES-002',
+    patientName: 'Ibrahim Koné',
+    patientPhone: '+223 75 11 22 33',
+    doctorName: 'Dr. Aminata Soumaré',
+    date: '2024-01-15',
+    status: 'pending',
+    medicines: [
+      { medicineId: '2', quantity: 14, instructions: '1 capsule 3 times daily', name: 'Amoxicillin 250mg' },
+      { medicineId: '1', quantity: 20, instructions: 'As needed for pain', name: 'Paracetamol 500mg' }
+    ]
+  }
+]
+
+const mockMobileReservations: MobileReservation[] = [
+  {
+    id: "RES-001",
+    customer: "Fatima Diallo",
+    phone: "+223 70 12 34 56",
+    items: [
+      { name: "Paracetamol 500mg", quantity: 10, price: 250, medicineId: '1' }
+    ],
+    total: 2500,
+    status: "pending",
+    orderDate: "2024-01-15 10:30",
+    pharmacy: "Pharmacie Centrale",
+    notes: "Ordonnance jointe via l'app",
+    prescriptionId: "PRES-001",
+    prescriptionFromApp: true,
+    prescriptionAttachment: "prescription_fatima_20240115.pdf"
+  },
+  {
+    id: "RES-002",
+    customer: "Ibrahim Koné",
+    phone: "+223 75 11 22 33",
+    items: [
+      { name: "Amoxicillin 250mg", quantity: 14, price: 450, medicineId: '2' },
+      { name: "Paracetamol 500mg", quantity: 20, price: 250, medicineId: '1' }
+    ],
+    total: 11300,
+    status: "ready",
+    orderDate: "2024-01-14 16:45",
+    pharmacy: "Pharmacie Nord",
+    prescriptionId: "PRES-002",
+    prescriptionFromApp: true,
+    prescriptionAttachment: "prescription_ibrahim_20240114.pdf"
+  },
+  {
+    id: "RES-003",
+    customer: "Aminata Traoré",
+    phone: "+223 65 44 33 22",
+    items: [
+      { name: "Vitamine C", quantity: 1, price: 300, medicineId: '4' }
+    ],
+    total: 300,
+    status: "delivered",
+    orderDate: "2024-01-14 09:15",
+    pharmacy: "Pharmacie Centrale",
+    prescriptionFromApp: false
   }
 ]
 
@@ -212,6 +292,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [prescriptions, setPrescriptions] = useState<Prescription[]>(mockPrescriptions)
   const [patients, setPatients] = useState<Patient[]>(mockPatients)
   const [invoices, setInvoices] = useState<Invoice[]>(mockInvoices)
+  const [mobileReservations, setMobileReservations] = useState<MobileReservation[]>(mockMobileReservations)
 
   // Medicine operations
   const addMedicine = (medicine: Omit<Medicine, 'id'>) => {
@@ -284,6 +365,16 @@ const updateInvoice = (id: string, updates: Partial<Invoice>) => {
   setInvoices(prev => prev.map(inv => inv.id === id ? { ...inv, ...updates } : inv))
 }
 
+// Mobile reservations operations
+const addMobileReservation = (reservation: Omit<MobileReservation, 'id'>) => {
+  const newReservation = { ...reservation, id: `RES-${Date.now()}` }
+  setMobileReservations(prev => [...prev, newReservation])
+}
+
+const updateMobileReservation = (id: string, updates: Partial<MobileReservation>) => {
+  setMobileReservations(prev => prev.map(res => res.id === id ? { ...res, ...updates } : res))
+}
+
 return (
   <DataContext.Provider value={{
     medicines,
@@ -292,6 +383,7 @@ return (
     prescriptions,
     patients,
     invoices,
+    mobileReservations,
     addMedicine,
     updateMedicine,
     deleteMedicine,
@@ -305,6 +397,8 @@ return (
     deletePatient,
     addInvoice,
     updateInvoice,
+    addMobileReservation,
+    updateMobileReservation,
   }}>
     {children}
   </DataContext.Provider>
