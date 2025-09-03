@@ -21,6 +21,7 @@ import Patients from "./pages/Patients";
 import Billing from "./pages/Billing";
 import Reservations from "./pages/Reservations";
 import Promotions from "./pages/Promotions";
+import PharmacyAdmin from "./pages/PharmacyAdmin";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import "./i18n";
@@ -120,6 +121,13 @@ const App = () => (
                   <ProtectedRoute allowedRoles={['Administrator']}>
                     <Layout>
                       <Settings />
+                    </Layout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/pharmacy-admin" element={
+                  <ProtectedRoute allowedRoles={['Administrator']}>
+                    <Layout>
+                      <PharmacyAdmin />
                     </Layout>
                   </ProtectedRoute>
                 } />

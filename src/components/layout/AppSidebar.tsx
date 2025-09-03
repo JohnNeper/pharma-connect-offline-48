@@ -25,6 +25,7 @@ import {
   WifiOff,
   Heart,
   Video,
+  Building2,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useTranslation } from 'react-i18next'
@@ -46,6 +47,7 @@ const useMenuItems = (t: any) => ({
     { title: t('billing'), url: "/billing", icon: FileText },
     { title: "Promotions", url: "/promotions", icon: Pill },
     { title: t('reports'), url: "/reports", icon: BarChart3 },
+    { title: "Admin Pharmacies", url: "/pharmacy-admin", icon: Building2 },
     { title: t('settings'), url: "/settings", icon: Settings },
   ],
   Pharmacist: [
