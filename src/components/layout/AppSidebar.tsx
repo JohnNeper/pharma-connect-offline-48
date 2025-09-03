@@ -36,44 +36,51 @@ const userRole = "Administrator"
 
 const useMenuItems = (t: any) => ({
   Administrator: [
-    { title: t('dashboard'), url: "/", icon: LayoutDashboard },
-    { title: "Télépharmacie", url: "/telepharmacy", icon: Video },
-    { title: t('stock'), url: "/stock", icon: Package },
-    { title: t('sales'), url: "/sales", icon: ShoppingCart },
-    { title: t('prescriptions'), url: "/prescriptions", icon: Heart },
-    { title: t('orders'), url: "/orders", icon: Pill },
-    { title: "Réservations", url: "/reservations", icon: Wifi },
-    { title: t('patients'), url: "/patients", icon: Users },
-    { title: t('billing'), url: "/billing", icon: FileText },
-    { title: "Promotions", url: "/promotions", icon: Pill },
-    { title: t('reports'), url: "/reports", icon: BarChart3 },
-    { title: "Admin Pharmacies", url: "/pharmacy-admin", icon: Building2 },
-    { title: t('settings'), url: "/settings", icon: Settings },
+    { title: "Tableau de Bord", url: "/", icon: LayoutDashboard, section: "main" },
+    
+    // Admin Section
+    { title: "Gestion Pharmacies", url: "/pharmacy-admin", icon: Building2, section: "admin" },
+    { title: "Utilisateurs Système", url: "/admin/users", icon: Users, section: "admin" },
+    { title: "Abonnements & Facturation", url: "/admin/billing", icon: FileText, section: "admin" },
+    { title: "Monitoring Global", url: "/admin/monitoring", icon: BarChart3, section: "admin" },
+    { title: "Configuration Système", url: "/admin/settings", icon: Settings, section: "admin" },
+    { title: "Logs & Sécurité", url: "/admin/security", icon: BarChart3, section: "admin" },
+    
+    // Operations Section  
+    { title: "Télépharmacie", url: "/telepharmacy", icon: Video, section: "operations" },
+    { title: t('stock'), url: "/stock", icon: Package, section: "operations" },
+    { title: t('sales'), url: "/sales", icon: ShoppingCart, section: "operations" },
+    { title: t('prescriptions'), url: "/prescriptions", icon: Heart, section: "operations" },
+    { title: t('orders'), url: "/orders", icon: Pill, section: "operations" },
+    { title: "Réservations", url: "/reservations", icon: Wifi, section: "operations" },
+    { title: t('patients'), url: "/patients", icon: Users, section: "operations" },
+    { title: "Promotions", url: "/promotions", icon: Pill, section: "operations" },
+    { title: t('reports'), url: "/reports", icon: BarChart3, section: "operations" },
   ],
   Pharmacist: [
-    { title: t('dashboard'), url: "/", icon: LayoutDashboard },
-    { title: t('stock'), url: "/stock", icon: Package },
-    { title: t('sales'), url: "/sales", icon: ShoppingCart },
-    { title: t('prescriptions'), url: "/prescriptions", icon: Heart },
-    { title: t('orders'), url: "/orders", icon: Pill },
-    { title: "Réservations", url: "/reservations", icon: Wifi },
-    { title: t('patients'), url: "/patients", icon: Users },
-    { title: t('billing'), url: "/billing", icon: FileText },
-    { title: "Promotions", url: "/promotions", icon: Pill },
-    { title: t('reports'), url: "/reports", icon: BarChart3 },
+    { title: t('dashboard'), url: "/", icon: LayoutDashboard, section: "main" },
+    { title: t('stock'), url: "/stock", icon: Package, section: "operations" },
+    { title: t('sales'), url: "/sales", icon: ShoppingCart, section: "operations" },
+    { title: t('prescriptions'), url: "/prescriptions", icon: Heart, section: "operations" },
+    { title: t('orders'), url: "/orders", icon: Pill, section: "operations" },
+    { title: "Réservations", url: "/reservations", icon: Wifi, section: "operations" },
+    { title: t('patients'), url: "/patients", icon: Users, section: "operations" },
+    { title: t('billing'), url: "/billing", icon: FileText, section: "operations" },
+    { title: "Promotions", url: "/promotions", icon: Pill, section: "operations" },
+    { title: t('reports'), url: "/reports", icon: BarChart3, section: "operations" },
   ],
   Cashier: [
-    { title: t('dashboard'), url: "/", icon: LayoutDashboard },
-    { title: t('sales'), url: "/sales", icon: ShoppingCart },
-    { title: t('stock'), url: "/stock", icon: Package },
-    { title: "Réservations", url: "/reservations", icon: Wifi },
-    { title: t('billing'), url: "/billing", icon: FileText },
+    { title: t('dashboard'), url: "/", icon: LayoutDashboard, section: "main" },
+    { title: t('sales'), url: "/sales", icon: ShoppingCart, section: "operations" },
+    { title: t('stock'), url: "/stock", icon: Package, section: "operations" },
+    { title: "Réservations", url: "/reservations", icon: Wifi, section: "operations" },
+    { title: t('billing'), url: "/billing", icon: FileText, section: "operations" },
   ],
   "Stock Manager": [
-    { title: t('dashboard'), url: "/", icon: LayoutDashboard },
-    { title: t('stock'), url: "/stock", icon: Package },
-    { title: t('orders'), url: "/orders", icon: Pill },
-    { title: t('reports'), url: "/reports", icon: BarChart3 },
+    { title: t('dashboard'), url: "/", icon: LayoutDashboard, section: "main" },
+    { title: t('stock'), url: "/stock", icon: Package, section: "operations" },
+    { title: t('orders'), url: "/orders", icon: Pill, section: "operations" },
+    { title: t('reports'), url: "/reports", icon: BarChart3, section: "operations" },
   ],
 })
 
@@ -150,29 +157,79 @@ export function AppSidebar() {
         </div>
 
         {/* Navigation Menu */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/70 font-medium">
-            {collapsed ? userRole.charAt(0) : userRole}
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink 
-                      to={item.url} 
-                      end 
-                      className={({ isActive }) => getNavCls({ isActive })}
-                    >
-                      <item.icon className="w-5 h-5" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        <div className="space-y-6">
+          {/* Main Dashboard */}
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {items.filter(item => item.section === "main").map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink 
+                        to={item.url} 
+                        end 
+                        className={({ isActive }) => getNavCls({ isActive })}
+                      >
+                        <item.icon className="w-5 h-5" />
+                        {!collapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          {/* Admin Section */}
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-sidebar-foreground/70 font-medium text-xs uppercase tracking-wider">
+              {collapsed ? "ADM" : "ADMINISTRATION"}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {items.filter(item => item.section === "admin").map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink 
+                        to={item.url} 
+                        end 
+                        className={({ isActive }) => getNavCls({ isActive })}
+                      >
+                        <item.icon className="w-5 h-5" />
+                        {!collapsed && <span className="text-sm">{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          {/* Operations Section */}
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-sidebar-foreground/70 font-medium text-xs uppercase tracking-wider">
+              {collapsed ? "OPS" : "OPÉRATIONS"}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {items.filter(item => item.section === "operations").map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink 
+                        to={item.url} 
+                        end 
+                        className={({ isActive }) => getNavCls({ isActive })}
+                      >
+                        <item.icon className="w-5 h-5" />
+                        {!collapsed && <span className="text-sm">{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </div>
 
         {/* User Info at Bottom */}
         {!collapsed && (
