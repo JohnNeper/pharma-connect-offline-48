@@ -86,15 +86,15 @@ export function SuperAdminSidebar() {
       <SidebarTrigger className="m-2 self-end" />
       
       <SidebarContent className="bg-card border-r">
-        <div className="p-4 border-b">
+        <div className="p-4 border-b border-border/50 bg-gradient-to-r from-primary to-primary-glow">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <Shield className="h-4 w-4 text-primary-foreground" />
+            <div className="w-10 h-10 bg-background/20 backdrop-blur-sm rounded-lg flex items-center justify-center shadow-glow">
+              <Shield className="h-5 w-5 text-primary-foreground" />
             </div>
             {!collapsed && (
               <div>
-                <h2 className="font-bold text-sm">Super Admin</h2>
-                <p className="text-xs text-muted-foreground">PharmaLink System</p>
+                <h2 className="font-bold text-base text-primary-foreground">PharmaLink Admin</h2>
+                <p className="text-xs text-primary-foreground/80">Système de Gestion Globale</p>
               </div>
             )}
           </div>

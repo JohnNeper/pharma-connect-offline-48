@@ -38,15 +38,11 @@ const useMenuItems = (t: any) => ({
   Administrator: [
     { title: "Tableau de Bord", url: "/", icon: LayoutDashboard, section: "main" },
     
-    // Admin Section
-    { title: "Gestion Pharmacies", url: "/pharmacy-admin", icon: Building2, section: "admin" },
-    { title: "Utilisateurs Système", url: "/admin/users", icon: Users, section: "admin" },
-    { title: "Abonnements & Facturation", url: "/admin/billing", icon: FileText, section: "admin" },
-    { title: "Monitoring Global", url: "/admin/monitoring", icon: BarChart3, section: "admin" },
-    { title: "Configuration Système", url: "/admin/settings", icon: Settings, section: "admin" },
-    { title: "Logs & Sécurité", url: "/admin/security", icon: BarChart3, section: "admin" },
+    // Pharmacy Management  
+    { title: "Gestion Équipe", url: "/pharmacy-admin", icon: Users, section: "management" },
+    { title: "Configuration", url: "/settings", icon: Settings, section: "management" },
     
-    // Operations Section  
+    // Daily Operations Section  
     { title: "Télépharmacie", url: "/telepharmacy", icon: Video, section: "operations" },
     { title: t('stock'), url: "/stock", icon: Package, section: "operations" },
     { title: t('sales'), url: "/sales", icon: ShoppingCart, section: "operations" },
@@ -55,6 +51,7 @@ const useMenuItems = (t: any) => ({
     { title: "Réservations", url: "/reservations", icon: Wifi, section: "operations" },
     { title: t('patients'), url: "/patients", icon: Users, section: "operations" },
     { title: "Promotions", url: "/promotions", icon: Pill, section: "operations" },
+    { title: t('billing'), url: "/billing", icon: FileText, section: "operations" },
     { title: t('reports'), url: "/reports", icon: BarChart3, section: "operations" },
   ],
   Pharmacist: [
@@ -180,14 +177,14 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
 
-          {/* Admin Section */}
+          {/* Pharmacy Management */}
           <SidebarGroup>
             <SidebarGroupLabel className="text-sidebar-foreground/70 font-medium text-xs uppercase tracking-wider">
-              {collapsed ? "ADM" : "ADMINISTRATION"}
+              {collapsed ? "GEST" : "GESTION PHARMACIE"}
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {items.filter(item => item.section === "admin").map((item) => (
+                {items.filter(item => item.section === "management").map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild>
                       <NavLink 
@@ -205,10 +202,10 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
 
-          {/* Operations Section */}
+          {/* Daily Operations */}
           <SidebarGroup>
             <SidebarGroupLabel className="text-sidebar-foreground/70 font-medium text-xs uppercase tracking-wider">
-              {collapsed ? "OPS" : "OPÉRATIONS"}
+              {collapsed ? "OPS" : "OPÉRATIONS QUOTIDIENNES"}
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
