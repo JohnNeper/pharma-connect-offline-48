@@ -22,6 +22,7 @@ export default function Login() {
 
   // Demo accounts for easy testing
   const demoAccounts = [
+    { email: 'superadmin@pharmalink.com', role: 'Super Admin', name: 'Administrateur Système', icon: Shield },
     { email: 'admin@pharmalink.com', role: 'Administrator', name: 'Dr. Amina Diallo', icon: Shield },
     { email: 'pharmacist@pharmalink.com', role: 'Pharmacist', name: 'Dr. Ibrahim Kone', icon: Heart },
     { email: 'cashier@pharmalink.com', role: 'Cashier', name: 'Marie Traore', icon: Users },
@@ -29,6 +30,10 @@ export default function Login() {
   ]
 
   if (user) {
+    // Redirect based on role
+    if (user.role === 'SuperAdmin') {
+      return <Navigate to="/super-admin" replace />
+    }
     return <Navigate to="/" replace />
   }
 

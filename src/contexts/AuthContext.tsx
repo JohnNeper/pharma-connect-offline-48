@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 
-export type UserRole = 'Administrator' | 'Pharmacist' | 'Cashier' | 'Stock Manager'
+export type UserRole = 'SuperAdmin' | 'Administrator' | 'Pharmacist' | 'Cashier' | 'Stock Manager'
 
 export interface User {
   id: string
@@ -8,6 +8,8 @@ export interface User {
   name: string
   role: UserRole
   avatar?: string
+  pharmacyId?: string
+  pharmacyName?: string
 }
 
 interface AuthContextType {
@@ -21,29 +23,43 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 // Mock users for demonstration
 const mockUsers: { [key: string]: User } = {
+  'superadmin@pharmalink.com': {
+    id: '0',
+    email: 'superadmin@pharmalink.com',
+    name: 'Administrateur Système',
+    role: 'SuperAdmin'
+  },
   'admin@pharmalink.com': {
     id: '1',
     email: 'admin@pharmalink.com',
     name: 'Dr. Amina Diallo',
-    role: 'Administrator'
+    role: 'Administrator',
+    pharmacyId: 'pharmacy-1',
+    pharmacyName: 'Pharmacie Centrale'
   },
   'pharmacist@pharmalink.com': {
     id: '2',
     email: 'pharmacist@pharmalink.com',
     name: 'Dr. Ibrahim Kone',
-    role: 'Pharmacist'
+    role: 'Pharmacist',
+    pharmacyId: 'pharmacy-1',
+    pharmacyName: 'Pharmacie Centrale'
   },
   'cashier@pharmalink.com': {
     id: '3',
     email: 'cashier@pharmalink.com',
     name: 'Marie Traore',
-    role: 'Cashier'
+    role: 'Cashier',
+    pharmacyId: 'pharmacy-1',
+    pharmacyName: 'Pharmacie Centrale'
   },
   'stock@pharmalink.com': {
     id: '4',
     email: 'stock@pharmalink.com',
     name: 'Ousmane Bah',
-    role: 'Stock Manager'
+    role: 'Stock Manager',
+    pharmacyId: 'pharmacy-1',
+    pharmacyName: 'Pharmacie Centrale'
   }
 }
 
