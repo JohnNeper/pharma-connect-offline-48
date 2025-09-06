@@ -81,7 +81,7 @@ interface Pharmacy {
 }
 
 // Enhanced mock data
-const mockPharmacies: Pharmacy[] = [
+const mockPharmacies: any[] = [
   {
     id: '1',
     name: 'Pharmacie Centrale',

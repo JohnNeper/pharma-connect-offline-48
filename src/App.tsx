@@ -7,11 +7,16 @@ import { ThemeProvider } from "./components/ThemeProvider";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { DataProvider } from "./contexts/DataContext";
 import { TelepharmacyProvider } from "./contexts/TelepharmacyContext";
+import { SuperAdminProvider } from "./contexts/SuperAdminContext";
 import { Layout } from "./components/layout/Layout";
 import { SuperAdminLayout } from "./components/layout/SuperAdminLayout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
+import SystemActivity from "./pages/super-admin/SystemActivity";
+import PharmaciesManagement from "./pages/super-admin/PharmaciesManagement";
+import PharmacyRequests from "./pages/super-admin/PharmacyRequests";
+import Subscriptions from "./pages/super-admin/Subscriptions";
 import Telepharmacy from "./pages/Telepharmacy";
 import StockManagement from "./pages/StockManagement";
 import Sales from "./pages/Sales";
@@ -42,6 +47,34 @@ function RoleBasedRouter() {
           <ProtectedRoute allowedRoles={['SuperAdmin']}>
             <SuperAdminLayout>
               <SuperAdminDashboard />
+            </SuperAdminLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/super-admin/activity" element={
+          <ProtectedRoute allowedRoles={['SuperAdmin']}>
+            <SuperAdminLayout>
+              <SystemActivity />
+            </SuperAdminLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/super-admin/pharmacies" element={
+          <ProtectedRoute allowedRoles={['SuperAdmin']}>
+            <SuperAdminLayout>
+              <PharmaciesManagement />
+            </SuperAdminLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/super-admin/pharmacy-requests" element={
+          <ProtectedRoute allowedRoles={['SuperAdmin']}>
+            <SuperAdminLayout>
+              <PharmacyRequests />
+            </SuperAdminLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/super-admin/subscriptions" element={
+          <ProtectedRoute allowedRoles={['SuperAdmin']}>
+            <SuperAdminLayout>
+              <Subscriptions />
             </SuperAdminLayout>
           </ProtectedRoute>
         } />
@@ -163,8 +196,9 @@ const App = () => (
     <BrowserRouter>
       <ThemeProvider>
         <AuthProvider>
-          <DataProvider>
-            <TelepharmacyProvider>
+          <SuperAdminProvider>
+            <DataProvider>
+              <TelepharmacyProvider>
               <TooltipProvider>
                 <Toaster />
                 <Sonner />
@@ -173,8 +207,9 @@ const App = () => (
                   <Route path="/*" element={<RoleBasedRouter />} />
                 </Routes>
               </TooltipProvider>
-            </TelepharmacyProvider>
-          </DataProvider>
+              </TelepharmacyProvider>
+            </DataProvider>
+          </SuperAdminProvider>
         </AuthProvider>
       </ThemeProvider>
     </BrowserRouter>
