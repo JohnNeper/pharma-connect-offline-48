@@ -16,6 +16,7 @@ export interface Medicine {
   cost: number
   batchNumber: string
   category: string
+  requiresPrescription: boolean
 }
 
 export interface Sale {
