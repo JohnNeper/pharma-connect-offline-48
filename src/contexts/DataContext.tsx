@@ -411,8 +411,48 @@ const mockMobileReservations: MobileReservation[] = [
 ]
 
 const mockPatients: Patient[] = [
-  { id: 'PAT-001', name: 'Fatima Diallo', phone: '+223 70 12 34 56', address: 'Bamako', allergies: 'Penicillin' },
-  { id: 'PAT-002', name: 'Ibrahim Koné', phone: '+223 75 11 22 33', address: 'Bamako' },
+  { 
+    id: 'PAT-001', name: 'Fatima Diallo', phone: '+223 70 12 34 56', address: 'Bamako', allergies: 'Penicillin',
+    isChronic: true, chronicConditions: ['Diabète Type 2'], loyaltyPharmacy: true,
+    lastVisit: '2024-01-15', nextAppointment: '2024-02-15',
+    treatments: [{
+      id: 'TRT-001', condition: 'Diabète Type 2',
+      medicines: [{ medicineId: '5', name: 'Metformine', dosage: '850mg', frequency: '2x/jour' }],
+      startDate: '2023-06-01', doctorName: 'Dr. Mamadou Keita',
+      renewalDate: '2024-02-01', status: 'active', notes: 'Contrôle glycémie mensuel'
+    }]
+  },
+  { 
+    id: 'PAT-002', name: 'Ibrahim Koné', phone: '+223 75 11 22 33', address: 'Bamako',
+    isChronic: true, chronicConditions: ['Hypertension'], loyaltyPharmacy: true,
+    lastVisit: '2024-01-10', nextAppointment: '2024-02-10',
+    treatments: [{
+      id: 'TRT-002', condition: 'Hypertension',
+      medicines: [{ medicineId: '8', name: 'Amlodipine', dosage: '5mg', frequency: '1x/jour' }],
+      startDate: '2023-03-15', doctorName: 'Dr. Aminata Soumaré',
+      renewalDate: '2024-03-15', status: 'active'
+    }]
+  },
+  { id: 'PAT-003', name: 'Aminata Traoré', phone: '+223 65 44 33 22', address: 'Bamako' },
+  { 
+    id: 'PAT-004', name: 'Moussa Coulibaly', phone: '+223 76 55 44 33', address: 'Bamako',
+    isChronic: true, chronicConditions: ['Diabète Type 2', 'Hypertension'], loyaltyPharmacy: true,
+    lastVisit: '2024-01-12', nextAppointment: '2024-02-12',
+    treatments: [
+      {
+        id: 'TRT-003', condition: 'Diabète Type 2',
+        medicines: [{ medicineId: '5', name: 'Metformine', dosage: '850mg', frequency: '3x/jour' }],
+        startDate: '2022-01-10', doctorName: 'Dr. Mamadou Keita',
+        renewalDate: '2024-01-10', status: 'active'
+      },
+      {
+        id: 'TRT-004', condition: 'Hypertension',
+        medicines: [{ medicineId: '8', name: 'Amlodipine', dosage: '5mg', frequency: '1x/jour' }],
+        startDate: '2022-06-01', doctorName: 'Dr. Aminata Soumaré',
+        renewalDate: '2024-06-01', status: 'active'
+      }
+    ]
+  },
 ]
 
 const mockInvoices: Invoice[] = [
