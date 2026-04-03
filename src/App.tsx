@@ -182,9 +182,12 @@ function RoleBasedRouter() {
       } />
       <Route path="/pharmacy-admin" element={
         <ProtectedRoute allowedRoles={['Administrator']}>
-          <Layout>
-            <PharmacyAdmin />
-          </Layout>
+          <Layout><PharmacyAdmin /></Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/chronic-patients" element={
+        <ProtectedRoute allowedRoles={['Administrator', 'Pharmacist']}>
+          <Layout><ChronicPatients /></Layout>
         </ProtectedRoute>
       } />
       <Route path="*" element={<NotFound />} />

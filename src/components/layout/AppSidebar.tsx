@@ -50,6 +50,7 @@ const useMenuItems = (t: any) => ({
     { title: t('orders'), url: "/orders", icon: Pill, section: "operations" },
     { title: "Réservations", url: "/reservations", icon: Wifi, section: "operations" },
     { title: t('patients'), url: "/patients", icon: Users, section: "operations" },
+    { title: "Patients Chroniques", url: "/chronic-patients", icon: Heart, section: "operations" },
     { title: "Promotions", url: "/promotions", icon: Pill, section: "operations" },
     { title: t('billing'), url: "/billing", icon: FileText, section: "operations" },
     { title: t('reports'), url: "/reports", icon: BarChart3, section: "operations" },
