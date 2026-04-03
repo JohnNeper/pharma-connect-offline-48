@@ -29,6 +29,7 @@ import Billing from "./pages/Billing";
 import Reservations from "./pages/Reservations";
 import Promotions from "./pages/Promotions";
 import PharmacyAdmin from "./pages/PharmacyAdmin";
+import ChronicPatients from "./pages/ChronicPatients";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import "./i18n";
@@ -181,9 +182,12 @@ function RoleBasedRouter() {
       } />
       <Route path="/pharmacy-admin" element={
         <ProtectedRoute allowedRoles={['Administrator']}>
-          <Layout>
-            <PharmacyAdmin />
-          </Layout>
+          <Layout><PharmacyAdmin /></Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/chronic-patients" element={
+        <ProtectedRoute allowedRoles={['Administrator', 'Pharmacist']}>
+          <Layout><ChronicPatients /></Layout>
         </ProtectedRoute>
       } />
       <Route path="*" element={<NotFound />} />

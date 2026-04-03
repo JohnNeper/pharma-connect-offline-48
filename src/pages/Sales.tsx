@@ -1,321 +1,506 @@
-import { useState } from "react"
+import { useState, useMemo, useRef, useCallback, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { 
-  ShoppingCart, 
-  Plus, 
-  Minus, 
-  Scan,
-  Calculator,
-  CreditCard,
-  Banknote,
-  Receipt,
-  X,
-  History,
-  Package,
-  Smartphone
+  ShoppingCart, Plus, Minus, Calculator, CreditCard, Banknote, Receipt, X,
+  History, Package, Smartphone, Search, FileWarning, ClipboardCheck, Printer,
+  FileText, AlertTriangle, User
 } from "lucide-react"
 import SalesHistory from "@/components/sales/SalesHistory"
 import ReservationsManagement from "@/components/sales/ReservationsManagement"
 import PaymentTracking from "@/components/sales/PaymentTracking"
+import { useData } from "@/contexts/DataContext"
+import { useAuth } from "@/contexts/AuthContext"
+import { toast } from "@/hooks/use-toast"
+import { printThermalReceipt, printA4Invoice } from "@/lib/print"
 
 interface CartItem {
-  id: string
+  medicineId: string
   name: string
+  dosage: string
   price: number
   quantity: number
   stock: number
+  requiresPrescription: boolean
 }
 
-// Mock data
-const availableMedicines = [
-  { id: "1", name: "Paracetamol 500mg", price: 150, stock: 150 },
-  { id: "2", name: "Amoxicillin 250mg", price: 300, stock: 8 },
-  { id: "3", name: "Aspirin 100mg", price: 120, stock: 75 },
-  { id: "4", name: "Vitamin C 1000mg", price: 200, stock: 200 },
-  { id: "5", name: "Ibuprofen 400mg", price: 180, stock: 90 }
-]
+interface PrescriptionData {
+  doctorName: string
+  patientName: string
+  patientPhone: string
+  prescriptionNumber: string
+  notes: string
+}
 
 export default function Sales() {
+  const { medicines, addSale, addInvoice, addPrescription, patients } = useData()
+  const { user } = useAuth()
+  
   const [cart, setCart] = useState<CartItem[]>([])
   const [searchTerm, setSearchTerm] = useState("")
-  const [paymentMethod, setPaymentMethod] = useState<"cash" | "card" | "mobile_money">("cash")
+  const [paymentMethod, setPaymentMethod] = useState<"cash" | "card" | "mobile">("cash")
+  const [selectedPatient, setSelectedPatient] = useState("")
+  const searchRef = useRef<HTMLInputElement>(null)
+  
+  // Prescription modal
+  const [showPrescriptionModal, setShowPrescriptionModal] = useState(false)
+  const [prescriptionData, setPrescriptionData] = useState<PrescriptionData>({
+    doctorName: '', patientName: '', patientPhone: '', prescriptionNumber: '', notes: ''
+  })
+  const [prescriptionValidated, setPrescriptionValidated] = useState(false)
+  const [savedPrescriptionId, setSavedPrescriptionId] = useState<string | null>(null)
 
-  const filteredMedicines = availableMedicines.filter(medicine =>
-    medicine.name.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-
-  const addToCart = (medicine: typeof availableMedicines[0]) => {
-    const existingItem = cart.find(item => item.id === medicine.id)
-    
-    if (existingItem) {
-      if (existingItem.quantity < medicine.stock) {
-        setCart(cart.map(item =>
-          item.id === medicine.id 
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        ))
+  // Focus search on keyboard shortcut
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'F2' || ((e.ctrlKey || e.metaKey) && e.key === 'f')) {
+        e.preventDefault()
+        searchRef.current?.focus()
       }
-    } else {
-      setCart([...cart, {
-        id: medicine.id,
-        name: medicine.name,
-        price: medicine.price,
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
+  // Smart search: match by initials, name start, or full text
+  const filteredMedicines = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase()
+    if (!q) return medicines.filter(m => m.currentStock > 0)
+    
+    return medicines.filter(m => {
+      if (m.currentStock <= 0) return false
+      const fullName = `${m.name} ${m.dosage}`.toLowerCase()
+      // Exact match
+      if (fullName.includes(q)) return true
+      // Initials match: "par" matches "Paracetamol", "amo" matches "Amoxicillin"
+      if (m.name.toLowerCase().startsWith(q)) return true
+      // Category match
+      if (m.category.toLowerCase().includes(q)) return true
+      // Barcode match
+      if (m.barcode.includes(q)) return true
+      // First letters of each word: "pc" matches "Paracetamol Capsule"
+      const words = fullName.split(/\s+/)
+      const initials = words.map(w => w[0]).join('')
+      if (initials.includes(q)) return true
+      return false
+    })
+  }, [searchTerm, medicines])
+
+  const cartHasPrescriptionItems = cart.some(item => item.requiresPrescription)
+
+  const addToCart = useCallback((med: typeof medicines[0]) => {
+    setCart(prev => {
+      const existing = prev.find(i => i.medicineId === med.id)
+      if (existing) {
+        if (existing.quantity >= med.currentStock) return prev
+        return prev.map(i => i.medicineId === med.id ? { ...i, quantity: i.quantity + 1 } : i)
+      }
+      return [...prev, {
+        medicineId: med.id,
+        name: med.name,
+        dosage: med.dosage,
+        price: med.price,
         quantity: 1,
-        stock: medicine.stock
-      }])
-    }
+        stock: med.currentStock,
+        requiresPrescription: med.requiresPrescription
+      }]
+    })
+  }, [])
+
+  const updateQuantity = (id: string, qty: number) => {
+    if (qty <= 0) setCart(prev => prev.filter(i => i.medicineId !== id))
+    else setCart(prev => prev.map(i => i.medicineId === id ? { ...i, quantity: qty } : i))
   }
 
-  const updateQuantity = (id: string, quantity: number) => {
-    if (quantity <= 0) {
-      setCart(cart.filter(item => item.id !== id))
-    } else {
-      setCart(cart.map(item =>
-        item.id === id ? { ...item, quantity } : item
-      ))
-    }
-  }
+  const removeFromCart = (id: string) => setCart(prev => prev.filter(i => i.medicineId !== id))
 
-  const removeFromCart = (id: string) => {
-    setCart(cart.filter(item => item.id !== id))
-  }
-
-  const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-  const tax = subtotal * 0.18 // 18% tax
+  const subtotal = cart.reduce((s, i) => s + i.price * i.quantity, 0)
+  const tax = Math.round(subtotal * 0.18)
   const total = subtotal + tax
 
+  const validatePrescription = () => {
+    if (!prescriptionData.doctorName || !prescriptionData.patientName) {
+      toast({ title: 'Erreur', description: 'Nom du médecin et du patient requis', variant: 'destructive' })
+      return
+    }
+    
+    // Save prescription
+    addPrescription({
+      patientName: prescriptionData.patientName,
+      patientPhone: prescriptionData.patientPhone,
+      doctorName: prescriptionData.doctorName,
+      date: new Date().toISOString().split('T')[0],
+      status: 'completed',
+      medicines: cart.filter(i => i.requiresPrescription).map(i => ({
+        medicineId: i.medicineId,
+        quantity: i.quantity,
+        instructions: '',
+        name: `${i.name} ${i.dosage}`
+      })),
+      notes: prescriptionData.notes
+    })
+    
+    const presId = `PRES-${Date.now()}`
+    setSavedPrescriptionId(presId)
+    setPrescriptionValidated(true)
+    setShowPrescriptionModal(false)
+    toast({ title: 'Ordonnance validée', description: `Ordonnance enregistrée: ${presId}` })
+  }
+
   const handleCheckout = () => {
-    // In real app, this would process payment
-    alert(`Payment of ₣ ${total.toFixed(0)} processed via ${paymentMethod}`)
+    if (cart.length === 0) return
+    
+    // Check if prescription is needed
+    if (cartHasPrescriptionItems && !prescriptionValidated) {
+      setShowPrescriptionModal(true)
+      return
+    }
+
+    const invoiceNumber = `FAC-${Date.now()}`
+    
+    // Record sale
+    addSale({
+      date: new Date().toISOString(),
+      medicines: cart.map(i => ({ medicineId: i.medicineId, quantity: i.quantity, price: i.price, name: `${i.name} ${i.dosage}` })),
+      total,
+      paymentMethod,
+      cashierId: user?.id || '',
+      cashierName: user?.name || '',
+      prescriptionId: savedPrescriptionId || undefined
+    })
+
+    // Record invoice
+    const patient = patients.find(p => p.id === selectedPatient)
+    addInvoice({
+      number: invoiceNumber,
+      date: new Date().toISOString(),
+      patientId: selectedPatient || '',
+      items: cart.map(i => ({ medicineId: i.medicineId, quantity: i.quantity, price: i.price, name: `${i.name} ${i.dosage}` })),
+      total,
+      status: 'paid'
+    })
+
+    toast({ 
+      title: 'Vente enregistrée ✓', 
+      description: `${invoiceNumber} - ${total} FCFA (${paymentMethod === 'cash' ? 'Espèces' : paymentMethod === 'card' ? 'Carte' : 'Mobile Money'})` 
+    })
+
+    // Reset
     setCart([])
+    setPrescriptionValidated(false)
+    setSavedPrescriptionId(null)
+    setSelectedPatient("")
+    setPrescriptionData({ doctorName: '', patientName: '', patientPhone: '', prescriptionNumber: '', notes: '' })
+    setSearchTerm("")
+    searchRef.current?.focus()
+  }
+
+  const handlePrintTicket = () => {
+    const patient = patients.find(p => p.id === selectedPatient)
+    printThermalReceipt({
+      invoiceNumber: `FAC-${Date.now()}`,
+      date: new Date().toLocaleString('fr-FR'),
+      pharmacyName: 'Pharmacie Centrale',
+      pharmacyAddress: 'Bamako, Mali',
+      pharmacyPhone: '+223 20 22 33 44',
+      patientName: patient?.name || prescriptionData.patientName || undefined,
+      cashierName: user?.name || '',
+      items: cart.map(i => ({ name: `${i.name} ${i.dosage}`, quantity: i.quantity, price: i.price, total: i.price * i.quantity })),
+      subtotal, tax, total,
+      paymentMethod: paymentMethod === 'cash' ? 'Espèces' : paymentMethod === 'card' ? 'Carte' : 'Mobile Money',
+      prescriptionId: savedPrescriptionId || undefined
+    })
+  }
+
+  const handlePrintA4 = () => {
+    const patient = patients.find(p => p.id === selectedPatient)
+    printA4Invoice({
+      invoiceNumber: `FAC-${Date.now()}`,
+      date: new Date().toLocaleString('fr-FR'),
+      pharmacyName: 'Pharmacie Centrale',
+      pharmacyAddress: 'Bamako, Mali',
+      pharmacyPhone: '+223 20 22 33 44',
+      patientName: patient?.name || prescriptionData.patientName || undefined,
+      cashierName: user?.name || '',
+      items: cart.map(i => ({ name: `${i.name} ${i.dosage}`, quantity: i.quantity, price: i.price, total: i.price * i.quantity })),
+      subtotal, tax, total,
+      paymentMethod: paymentMethod === 'cash' ? 'Espèces' : paymentMethod === 'card' ? 'Carte' : 'Mobile Money',
+      prescriptionId: savedPrescriptionId || undefined
+    })
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Point de Vente</h1>
-        <p className="text-muted-foreground">Gestion complète des ventes, réservations et paiements de la pharmacie.</p>
+    <div className="space-y-4 animate-fade-in">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Point de Vente</h1>
+          <p className="text-sm text-muted-foreground">Recherche rapide: tapez les premières lettres (F2)</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {cartHasPrescriptionItems && (
+            <Badge variant={prescriptionValidated ? "default" : "destructive"} className="gap-1">
+              <ClipboardCheck className="w-3 h-3" />
+              {prescriptionValidated ? 'Ordonnance validée' : 'Ordonnance requise'}
+            </Badge>
+          )}
+        </div>
       </div>
 
       <Tabs defaultValue="pos" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="pos" className="gap-2">
-            <ShoppingCart className="w-4 h-4" />
-            Vente rapide
+            <ShoppingCart className="w-4 h-4" /> Vente rapide
           </TabsTrigger>
           <TabsTrigger value="reservations" className="gap-2">
-            <Package className="w-4 h-4" />
-            Réservations
+            <Package className="w-4 h-4" /> Réservations
           </TabsTrigger>
           <TabsTrigger value="payments" className="gap-2">
-            <CreditCard className="w-4 h-4" />
-            Paiements
+            <CreditCard className="w-4 h-4" /> Paiements
           </TabsTrigger>
           <TabsTrigger value="history" className="gap-2">
-            <History className="w-4 h-4" />
-            Historique
+            <History className="w-4 h-4" /> Historique
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="pos" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Product Selection */}
-            <div className="lg:col-span-2 space-y-6">
-
+        <TabsContent value="pos" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Left: Search + Results */}
+            <div className="lg:col-span-2 space-y-4">
               {/* Search Bar */}
-              <Card className="shadow-soft">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-4">
-                    <div className="relative flex-1">
-                      <Input
-                        placeholder="Rechercher médicaments..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="text-lg h-12"
-                      />
-                    </div>
-                    <Button variant="gradient" size="lg">
-                      <Scan className="w-5 h-5 mr-2" />
-                      Scanner code-barres
-                    </Button>
+              <Card>
+                <CardContent className="p-3">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <Input
+                      ref={searchRef}
+                      placeholder="Recherche rapide par nom, initiales, catégorie ou code-barre... (F2)"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10 text-lg h-12"
+                      autoFocus
+                    />
+                    {searchTerm && (
+                      <Button
+                        variant="ghost" size="sm"
+                        className="absolute right-2 top-1/2 -translate-y-1/2"
+                        onClick={() => { setSearchTerm(""); searchRef.current?.focus() }}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                  <div className="flex gap-2 mt-2 flex-wrap">
+                    {['Analgesic', 'Antibiotic', 'Vitamin', 'Hormone'].map(cat => (
+                      <Badge
+                        key={cat}
+                        variant="outline"
+                        className="cursor-pointer hover:bg-accent"
+                        onClick={() => setSearchTerm(cat.toLowerCase())}
+                      >
+                        {cat}
+                      </Badge>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Medicine Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {filteredMedicines.map((medicine) => (
+              {/* Results */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 max-h-[60vh] overflow-y-auto">
+                {filteredMedicines.map((med) => (
                   <Card 
-                    key={medicine.id} 
-                    className="shadow-soft hover:shadow-medium transition-all cursor-pointer"
-                    onClick={() => addToCart(medicine)}
+                    key={med.id}
+                    className="cursor-pointer hover:shadow-md transition-all border-l-4"
+                    style={{ borderLeftColor: med.requiresPrescription ? 'hsl(var(--destructive))' : 'hsl(var(--primary))' }}
+                    onClick={() => addToCart(med)}
                   >
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <h3 className="font-medium">{medicine.name}</h3>
-                          <p className="text-sm text-muted-foreground">Stock: {medicine.stock}</p>
-                          <p className="text-lg font-bold text-primary">₣ {medicine.price}</p>
+                    <CardContent className="p-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-sm truncate">{med.name}</h4>
+                          <p className="text-xs text-muted-foreground">{med.dosage} · {med.form}</p>
+                          <p className="text-sm font-bold text-primary mt-1">{med.price} FCFA</p>
                         </div>
-                        <Button variant="medical" size="sm">
-                          <Plus className="w-4 h-4" />
-                        </Button>
+                        <div className="text-right flex flex-col items-end gap-1">
+                          <Badge variant={med.currentStock <= med.minStock ? "destructive" : "outline"} className="text-xs">
+                            Stock: {med.currentStock}
+                          </Badge>
+                          {med.requiresPrescription && (
+                            <Badge variant="destructive" className="text-xs gap-1">
+                              <FileWarning className="w-3 h-3" /> Ordo
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
                 ))}
+                {filteredMedicines.length === 0 && (
+                  <div className="col-span-full text-center py-12 text-muted-foreground">
+                    <Search className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                    <p>Aucun médicament trouvé pour "{searchTerm}"</p>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Shopping Cart */}
-            <div className="space-y-6">
-              <Card className="shadow-soft">
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <ShoppingCart className="w-5 h-5" />
-                    Panier ({cart.length})
+            {/* Right: Cart + Checkout */}
+            <div className="space-y-4">
+              {/* Patient Selection */}
+              <Card>
+                <CardContent className="p-3">
+                  <Label className="text-xs font-medium text-muted-foreground">Client (optionnel)</Label>
+                  <select
+                    className="w-full h-9 rounded-md border bg-background px-3 text-sm mt-1"
+                    value={selectedPatient}
+                    onChange={(e) => setSelectedPatient(e.target.value)}
+                  >
+                    <option value="">Client anonyme</option>
+                    {patients.map(p => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} {p.isChronic ? '🔴' : ''} {p.phone || ''}
+                      </option>
+                    ))}
+                  </select>
+                </CardContent>
+              </Card>
+
+              {/* Cart */}
+              <Card>
+                <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <ShoppingCart className="w-4 h-4" /> Panier ({cart.length})
                   </CardTitle>
                   {cart.length > 0 && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => setCart([])}
-                    >
-                      Vider le panier
+                    <Button variant="ghost" size="sm" onClick={() => setCart([])}>
+                      Vider
                     </Button>
                   )}
                 </CardHeader>
-                
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-2 max-h-[35vh] overflow-y-auto">
                   {cart.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
-                      <ShoppingCart className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                      <p>Votre panier est vide</p>
-                      <p className="text-sm">Ajoutez des médicaments pour commencer une transaction</p>
+                      <ShoppingCart className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                      <p className="text-sm">Panier vide</p>
                     </div>
                   ) : (
-                    <>
-                      {cart.map((item) => (
-                        <div key={item.id} className="flex items-center gap-3 p-3 border rounded-lg">
-                          <div className="flex-1">
-                            <h4 className="font-medium text-sm">{item.name}</h4>
-                            <p className="text-xs text-muted-foreground">₣ {item.price} l'unité</p>
+                    cart.map((item) => (
+                      <div key={item.medicineId} className="flex items-center gap-2 p-2 border rounded-lg text-sm">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1">
+                            <span className="font-medium truncate">{item.name}</span>
+                            {item.requiresPrescription && <FileWarning className="w-3 h-3 text-destructive flex-shrink-0" />}
                           </div>
-                          
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="w-8 h-8 p-0"
-                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                            >
-                              <Minus className="w-3 h-3" />
-                            </Button>
-                            
-                            <span className="w-8 text-center font-medium">{item.quantity}</span>
-                            
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="w-8 h-8 p-0"
-                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                              disabled={item.quantity >= item.stock}
-                            >
-                              <Plus className="w-3 h-3" />
-                            </Button>
-                            
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="w-8 h-8 p-0 ml-2"
-                              onClick={() => removeFromCart(item.id)}
-                            >
-                              <X className="w-3 h-3" />
-                            </Button>
-                          </div>
-                          
-                          <div className="text-right">
-                            <p className="font-medium">₣ {item.price * item.quantity}</p>
-                          </div>
+                          <span className="text-xs text-muted-foreground">{item.price} FCFA × {item.quantity}</span>
                         </div>
-                      ))}
-                    </>
+                        <div className="flex items-center gap-1">
+                          <Button variant="outline" size="sm" className="w-7 h-7 p-0"
+                            onClick={() => updateQuantity(item.medicineId, item.quantity - 1)}>
+                            <Minus className="w-3 h-3" />
+                          </Button>
+                          <span className="w-6 text-center text-sm font-medium">{item.quantity}</span>
+                          <Button variant="outline" size="sm" className="w-7 h-7 p-0"
+                            onClick={() => updateQuantity(item.medicineId, item.quantity + 1)}
+                            disabled={item.quantity >= item.stock}>
+                            <Plus className="w-3 h-3" />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="w-7 h-7 p-0 ml-1"
+                            onClick={() => removeFromCart(item.medicineId)}>
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                        <span className="font-semibold text-sm w-20 text-right">{item.price * item.quantity} F</span>
+                      </div>
+                    ))
                   )}
                 </CardContent>
               </Card>
 
               {/* Checkout */}
               {cart.length > 0 && (
-                <Card className="shadow-soft">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Calculator className="w-5 h-5" />
-                      Encaissement
-                    </CardTitle>
-                  </CardHeader>
-                  
-                  <CardContent className="space-y-4">
+                <Card>
+                  <CardContent className="p-4 space-y-4">
+                    {/* Prescription warning */}
+                    {cartHasPrescriptionItems && !prescriptionValidated && (
+                      <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                        <AlertTriangle className="w-5 h-5 text-destructive flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-destructive">Ordonnance requise</p>
+                          <p className="text-xs text-muted-foreground">
+                            {cart.filter(i => i.requiresPrescription).map(i => i.name).join(', ')}
+                          </p>
+                        </div>
+                        <Button size="sm" variant="destructive" onClick={() => setShowPrescriptionModal(true)}>
+                          <ClipboardCheck className="w-4 h-4 mr-1" /> Valider
+                        </Button>
+                      </div>
+                    )}
+
+                    {prescriptionValidated && (
+                      <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/10 border border-primary/20">
+                        <ClipboardCheck className="w-4 h-4 text-primary" />
+                        <span className="text-xs text-primary font-medium">Ordonnance: {savedPrescriptionId}</span>
+                      </div>
+                    )}
+
                     {/* Payment Method */}
                     <div>
-                      <p className="font-medium mb-2">Mode de paiement</p>
-                      <div className="grid grid-cols-3 gap-2">
-                        <Button
-                          variant={paymentMethod === "cash" ? "default" : "outline"}
-                          onClick={() => setPaymentMethod("cash")}
-                          className="h-auto p-3"
-                        >
-                          <Banknote className="w-4 h-4 mr-2" />
-                          Espèces
-                        </Button>
-                        <Button
-                          variant={paymentMethod === "card" ? "default" : "outline"}
-                          onClick={() => setPaymentMethod("card")}
-                          className="h-auto p-3"
-                        >
-                          <CreditCard className="w-4 h-4 mr-2" />
-                          Carte
-                        </Button>
-                        <Button
-                          variant={paymentMethod === "mobile_money" ? "default" : "outline"}
-                          onClick={() => setPaymentMethod("mobile_money")}
-                          className="h-auto p-3"
-                        >
-                          <Smartphone className="w-4 h-4 mr-2" />
-                          Mobile Money
-                        </Button>
+                      <Label className="text-xs text-muted-foreground">Mode de paiement</Label>
+                      <div className="grid grid-cols-3 gap-2 mt-1">
+                        {[
+                          { value: 'cash' as const, icon: Banknote, label: 'Espèces' },
+                          { value: 'card' as const, icon: CreditCard, label: 'Carte' },
+                          { value: 'mobile' as const, icon: Smartphone, label: 'Mobile' }
+                        ].map(pm => (
+                          <Button
+                            key={pm.value}
+                            variant={paymentMethod === pm.value ? "default" : "outline"}
+                            onClick={() => setPaymentMethod(pm.value)}
+                            className="h-auto py-2 text-xs"
+                          >
+                            <pm.icon className="w-4 h-4 mr-1" />
+                            {pm.label}
+                          </Button>
+                        ))}
                       </div>
                     </div>
 
                     {/* Summary */}
-                    <div className="space-y-2 pt-4 border-t">
+                    <div className="space-y-1 pt-2 border-t text-sm">
                       <div className="flex justify-between">
-                        <span>Sous-total:</span>
-                        <span>₣ {subtotal.toFixed(0)}</span>
+                        <span className="text-muted-foreground">Sous-total:</span>
+                        <span>{subtotal} FCFA</span>
                       </div>
                       <div className="flex justify-between">
-                        <span>TVA (18%):</span>
-                        <span>₣ {tax.toFixed(0)}</span>
+                        <span className="text-muted-foreground">TVA (18%):</span>
+                        <span>{tax} FCFA</span>
                       </div>
                       <div className="flex justify-between font-bold text-lg border-t pt-2">
                         <span>Total:</span>
-                        <span>₣ {total.toFixed(0)}</span>
+                        <span className="text-primary">{total} FCFA</span>
                       </div>
                     </div>
 
-                    <Button 
-                      variant="gradient" 
-                      size="lg" 
-                      className="w-full"
-                      onClick={handleCheckout}
-                    >
-                      <Receipt className="w-5 h-5 mr-2" />
-                      Finaliser la vente
-                    </Button>
+                    {/* Actions */}
+                    <div className="space-y-2">
+                      <Button className="w-full" size="lg" onClick={handleCheckout}
+                        disabled={cartHasPrescriptionItems && !prescriptionValidated}>
+                        <Receipt className="w-5 h-5 mr-2" /> Finaliser la vente
+                      </Button>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button variant="outline" size="sm" onClick={handlePrintTicket}>
+                          <Printer className="w-4 h-4 mr-1" /> Ticket
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={handlePrintA4}>
+                          <FileText className="w-4 h-4 mr-1" /> Facture A4
+                        </Button>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               )}
@@ -323,18 +508,81 @@ export default function Sales() {
           </div>
         </TabsContent>
 
-        <TabsContent value="reservations">
-          <ReservationsManagement />
-        </TabsContent>
-
-        <TabsContent value="payments">
-          <PaymentTracking />
-        </TabsContent>
-
-        <TabsContent value="history">
-          <SalesHistory />
-        </TabsContent>
+        <TabsContent value="reservations"><ReservationsManagement /></TabsContent>
+        <TabsContent value="payments"><PaymentTracking /></TabsContent>
+        <TabsContent value="history"><SalesHistory /></TabsContent>
       </Tabs>
+
+      {/* Prescription Validation Modal */}
+      <Dialog open={showPrescriptionModal} onOpenChange={setShowPrescriptionModal}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ClipboardCheck className="w-5 h-5" /> Validation de l'ordonnance
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+              <p className="text-sm font-medium">Médicaments sous ordonnance dans le panier:</p>
+              <ul className="mt-1 space-y-1">
+                {cart.filter(i => i.requiresPrescription).map(i => (
+                  <li key={i.medicineId} className="text-sm flex items-center gap-2">
+                    <FileWarning className="w-3 h-3 text-destructive" />
+                    {i.name} {i.dosage} × {i.quantity}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Nom du médecin *</Label>
+                <Input value={prescriptionData.doctorName}
+                  onChange={(e) => setPrescriptionData(p => ({ ...p, doctorName: e.target.value }))}
+                  placeholder="Dr. ..."
+                />
+              </div>
+              <div>
+                <Label>N° Ordonnance</Label>
+                <Input value={prescriptionData.prescriptionNumber}
+                  onChange={(e) => setPrescriptionData(p => ({ ...p, prescriptionNumber: e.target.value }))}
+                  placeholder="ORD-..."
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Nom du patient *</Label>
+                <Input value={prescriptionData.patientName}
+                  onChange={(e) => setPrescriptionData(p => ({ ...p, patientName: e.target.value }))}
+                  placeholder="Nom complet"
+                />
+              </div>
+              <div>
+                <Label>Téléphone</Label>
+                <Input value={prescriptionData.patientPhone}
+                  onChange={(e) => setPrescriptionData(p => ({ ...p, patientPhone: e.target.value }))}
+                  placeholder="+223..."
+                />
+              </div>
+            </div>
+            <div>
+              <Label>Notes</Label>
+              <Textarea value={prescriptionData.notes}
+                onChange={(e) => setPrescriptionData(p => ({ ...p, notes: e.target.value }))}
+                placeholder="Observations..."
+                rows={2}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPrescriptionModal(false)}>Annuler</Button>
+            <Button onClick={validatePrescription}>
+              <ClipboardCheck className="w-4 h-4 mr-2" /> Valider l'ordonnance
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

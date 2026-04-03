@@ -59,7 +59,8 @@ export function AddMedicineModal({
         price: parseFloat(formData.price),
         cost: parseFloat(formData.cost),
         batchNumber: formData.batchNumber,
-        category: formData.category
+        category: formData.category,
+        requiresPrescription: false
       })
 
       toast({

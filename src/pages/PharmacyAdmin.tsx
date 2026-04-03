@@ -964,13 +964,13 @@ const PharmacyAdmin = () => {
           setPharmacies([...pharmacies, { 
             ...newPharmacy, 
             id: Date.now().toString(),
-            cpu: 0,
-            memory: 0,
-            storage: 0,
-            uptime: 100,
-            apiCalls: 0,
-            lastBackup: new Date().toISOString().split('T')[0]
-          }])
+            joinDate: new Date(),
+            lastActivity: new Date(),
+            medications: 0,
+            sales: 0,
+            employeeCount: 1,
+            monthlyTransactions: 0,
+          } as any])
           setIsAddModalOpen(false)
         }}
       />

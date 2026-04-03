@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react'
+import React, { createContext, useContext, useState, ReactNode } from 'react'
 
 // Data interfaces
 export interface Medicine {
@@ -16,6 +16,7 @@ export interface Medicine {
   cost: number
   batchNumber: string
   category: string
+  requiresPrescription: boolean
 }
 
 export interface Sale {
@@ -60,6 +61,25 @@ export interface Patient {
   allergies?: string
   dob?: string
   notes?: string
+  // Chronic disease tracking
+  isChronic?: boolean
+  chronicConditions?: string[]
+  treatments?: ChronicTreatment[]
+  lastVisit?: string
+  nextAppointment?: string
+  loyaltyPharmacy?: boolean
+}
+
+export interface ChronicTreatment {
+  id: string
+  condition: string
+  medicines: { medicineId: string; name: string; dosage: string; frequency: string }[]
+  startDate: string
+  endDate?: string
+  doctorName: string
+  renewalDate?: string
+  notes?: string
+  status: 'active' | 'completed' | 'paused'
 }
 
 export interface Invoice {
@@ -145,7 +165,8 @@ const mockMedicines: Medicine[] = [
     price: 250,
     cost: 180,
     batchNumber: 'PAR001',
-    category: 'Analgesic'
+    category: 'Analgesic',
+    requiresPrescription: false
   },
   {
     id: '2',
@@ -160,7 +181,8 @@ const mockMedicines: Medicine[] = [
     price: 450,
     cost: 320,
     batchNumber: 'AMX002',
-    category: 'Antibiotic'
+    category: 'Antibiotic',
+    requiresPrescription: true
   },
   {
     id: '3',
@@ -175,7 +197,120 @@ const mockMedicines: Medicine[] = [
     price: 2500,
     cost: 1800,
     batchNumber: 'INS003',
-    category: 'Hormone'
+    category: 'Hormone',
+    requiresPrescription: true
+  },
+  {
+    id: '4',
+    name: 'Doliprane',
+    form: 'Tablet',
+    dosage: '1000mg',
+    barcode: '123456789015',
+    currentStock: 200,
+    minStock: 60,
+    expiryDate: '2026-03-15',
+    supplier: 'Sanofi',
+    price: 350,
+    cost: 220,
+    batchNumber: 'DOL004',
+    category: 'Analgesic',
+    requiresPrescription: false
+  },
+  {
+    id: '5',
+    name: 'Metformine',
+    form: 'Tablet',
+    dosage: '850mg',
+    barcode: '123456789016',
+    currentStock: 120,
+    minStock: 40,
+    expiryDate: '2025-09-30',
+    supplier: 'DiabetCare Solutions',
+    price: 800,
+    cost: 550,
+    batchNumber: 'MET005',
+    category: 'Antidiabetic',
+    requiresPrescription: true
+  },
+  {
+    id: '6',
+    name: 'Oméprazole',
+    form: 'Capsule',
+    dosage: '20mg',
+    barcode: '123456789017',
+    currentStock: 90,
+    minStock: 30,
+    expiryDate: '2025-11-30',
+    supplier: 'MediCorp Pharmaceuticals',
+    price: 600,
+    cost: 400,
+    batchNumber: 'OME006',
+    category: 'Gastro',
+    requiresPrescription: true
+  },
+  {
+    id: '7',
+    name: 'Ibuprofène',
+    form: 'Tablet',
+    dosage: '400mg',
+    barcode: '123456789018',
+    currentStock: 180,
+    minStock: 50,
+    expiryDate: '2026-01-31',
+    supplier: 'PharmaDist Global',
+    price: 300,
+    cost: 180,
+    batchNumber: 'IBU007',
+    category: 'Anti-inflammatory',
+    requiresPrescription: false
+  },
+  {
+    id: '8',
+    name: 'Amlodipine',
+    form: 'Tablet',
+    dosage: '5mg',
+    barcode: '123456789019',
+    currentStock: 100,
+    minStock: 30,
+    expiryDate: '2025-10-31',
+    supplier: 'DiabetCare Solutions',
+    price: 950,
+    cost: 650,
+    batchNumber: 'AML008',
+    category: 'Antihypertensive',
+    requiresPrescription: true
+  },
+  {
+    id: '9',
+    name: 'Vitamine C',
+    form: 'Tablet',
+    dosage: '1000mg',
+    barcode: '123456789020',
+    currentStock: 250,
+    minStock: 50,
+    expiryDate: '2026-06-30',
+    supplier: 'MediCorp Pharmaceuticals',
+    price: 200,
+    cost: 100,
+    batchNumber: 'VTC009',
+    category: 'Vitamin',
+    requiresPrescription: false
+  },
+  {
+    id: '10',
+    name: 'Ciprofloxacine',
+    form: 'Tablet',
+    dosage: '500mg',
+    barcode: '123456789021',
+    currentStock: 60,
+    minStock: 20,
+    expiryDate: '2025-08-15',
+    supplier: 'PharmaDist Global',
+    price: 700,
+    cost: 480,
+    batchNumber: 'CIP010',
+    category: 'Antibiotic',
+    requiresPrescription: true
   }
 ]
 
@@ -276,8 +411,48 @@ const mockMobileReservations: MobileReservation[] = [
 ]
 
 const mockPatients: Patient[] = [
-  { id: 'PAT-001', name: 'Fatima Diallo', phone: '+223 70 12 34 56', address: 'Bamako', allergies: 'Penicillin' },
-  { id: 'PAT-002', name: 'Ibrahim Koné', phone: '+223 75 11 22 33', address: 'Bamako' },
+  { 
+    id: 'PAT-001', name: 'Fatima Diallo', phone: '+223 70 12 34 56', address: 'Bamako', allergies: 'Penicillin',
+    isChronic: true, chronicConditions: ['Diabète Type 2'], loyaltyPharmacy: true,
+    lastVisit: '2024-01-15', nextAppointment: '2024-02-15',
+    treatments: [{
+      id: 'TRT-001', condition: 'Diabète Type 2',
+      medicines: [{ medicineId: '5', name: 'Metformine', dosage: '850mg', frequency: '2x/jour' }],
+      startDate: '2023-06-01', doctorName: 'Dr. Mamadou Keita',
+      renewalDate: '2024-02-01', status: 'active', notes: 'Contrôle glycémie mensuel'
+    }]
+  },
+  { 
+    id: 'PAT-002', name: 'Ibrahim Koné', phone: '+223 75 11 22 33', address: 'Bamako',
+    isChronic: true, chronicConditions: ['Hypertension'], loyaltyPharmacy: true,
+    lastVisit: '2024-01-10', nextAppointment: '2024-02-10',
+    treatments: [{
+      id: 'TRT-002', condition: 'Hypertension',
+      medicines: [{ medicineId: '8', name: 'Amlodipine', dosage: '5mg', frequency: '1x/jour' }],
+      startDate: '2023-03-15', doctorName: 'Dr. Aminata Soumaré',
+      renewalDate: '2024-03-15', status: 'active'
+    }]
+  },
+  { id: 'PAT-003', name: 'Aminata Traoré', phone: '+223 65 44 33 22', address: 'Bamako' },
+  { 
+    id: 'PAT-004', name: 'Moussa Coulibaly', phone: '+223 76 55 44 33', address: 'Bamako',
+    isChronic: true, chronicConditions: ['Diabète Type 2', 'Hypertension'], loyaltyPharmacy: true,
+    lastVisit: '2024-01-12', nextAppointment: '2024-02-12',
+    treatments: [
+      {
+        id: 'TRT-003', condition: 'Diabète Type 2',
+        medicines: [{ medicineId: '5', name: 'Metformine', dosage: '850mg', frequency: '3x/jour' }],
+        startDate: '2022-01-10', doctorName: 'Dr. Mamadou Keita',
+        renewalDate: '2024-01-10', status: 'active'
+      },
+      {
+        id: 'TRT-004', condition: 'Hypertension',
+        medicines: [{ medicineId: '8', name: 'Amlodipine', dosage: '5mg', frequency: '1x/jour' }],
+        startDate: '2022-06-01', doctorName: 'Dr. Aminata Soumaré',
+        renewalDate: '2024-06-01', status: 'active'
+      }
+    ]
+  },
 ]
 
 const mockInvoices: Invoice[] = [
