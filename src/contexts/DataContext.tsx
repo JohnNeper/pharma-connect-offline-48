@@ -165,7 +165,8 @@ const mockMedicines: Medicine[] = [
     price: 250,
     cost: 180,
     batchNumber: 'PAR001',
-    category: 'Analgesic'
+    category: 'Analgesic',
+    requiresPrescription: false
   },
   {
     id: '2',
@@ -180,7 +181,8 @@ const mockMedicines: Medicine[] = [
     price: 450,
     cost: 320,
     batchNumber: 'AMX002',
-    category: 'Antibiotic'
+    category: 'Antibiotic',
+    requiresPrescription: true
   },
   {
     id: '3',
@@ -195,7 +197,120 @@ const mockMedicines: Medicine[] = [
     price: 2500,
     cost: 1800,
     batchNumber: 'INS003',
-    category: 'Hormone'
+    category: 'Hormone',
+    requiresPrescription: true
+  },
+  {
+    id: '4',
+    name: 'Doliprane',
+    form: 'Tablet',
+    dosage: '1000mg',
+    barcode: '123456789015',
+    currentStock: 200,
+    minStock: 60,
+    expiryDate: '2026-03-15',
+    supplier: 'Sanofi',
+    price: 350,
+    cost: 220,
+    batchNumber: 'DOL004',
+    category: 'Analgesic',
+    requiresPrescription: false
+  },
+  {
+    id: '5',
+    name: 'Metformine',
+    form: 'Tablet',
+    dosage: '850mg',
+    barcode: '123456789016',
+    currentStock: 120,
+    minStock: 40,
+    expiryDate: '2025-09-30',
+    supplier: 'DiabetCare Solutions',
+    price: 800,
+    cost: 550,
+    batchNumber: 'MET005',
+    category: 'Antidiabetic',
+    requiresPrescription: true
+  },
+  {
+    id: '6',
+    name: 'Oméprazole',
+    form: 'Capsule',
+    dosage: '20mg',
+    barcode: '123456789017',
+    currentStock: 90,
+    minStock: 30,
+    expiryDate: '2025-11-30',
+    supplier: 'MediCorp Pharmaceuticals',
+    price: 600,
+    cost: 400,
+    batchNumber: 'OME006',
+    category: 'Gastro',
+    requiresPrescription: true
+  },
+  {
+    id: '7',
+    name: 'Ibuprofène',
+    form: 'Tablet',
+    dosage: '400mg',
+    barcode: '123456789018',
+    currentStock: 180,
+    minStock: 50,
+    expiryDate: '2026-01-31',
+    supplier: 'PharmaDist Global',
+    price: 300,
+    cost: 180,
+    batchNumber: 'IBU007',
+    category: 'Anti-inflammatory',
+    requiresPrescription: false
+  },
+  {
+    id: '8',
+    name: 'Amlodipine',
+    form: 'Tablet',
+    dosage: '5mg',
+    barcode: '123456789019',
+    currentStock: 100,
+    minStock: 30,
+    expiryDate: '2025-10-31',
+    supplier: 'DiabetCare Solutions',
+    price: 950,
+    cost: 650,
+    batchNumber: 'AML008',
+    category: 'Antihypertensive',
+    requiresPrescription: true
+  },
+  {
+    id: '9',
+    name: 'Vitamine C',
+    form: 'Tablet',
+    dosage: '1000mg',
+    barcode: '123456789020',
+    currentStock: 250,
+    minStock: 50,
+    expiryDate: '2026-06-30',
+    supplier: 'MediCorp Pharmaceuticals',
+    price: 200,
+    cost: 100,
+    batchNumber: 'VTC009',
+    category: 'Vitamin',
+    requiresPrescription: false
+  },
+  {
+    id: '10',
+    name: 'Ciprofloxacine',
+    form: 'Tablet',
+    dosage: '500mg',
+    barcode: '123456789021',
+    currentStock: 60,
+    minStock: 20,
+    expiryDate: '2025-08-15',
+    supplier: 'PharmaDist Global',
+    price: 700,
+    cost: 480,
+    batchNumber: 'CIP010',
+    category: 'Antibiotic',
+    requiresPrescription: true
   }
 ]
 
