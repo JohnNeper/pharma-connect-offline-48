@@ -61,6 +61,25 @@ export interface Patient {
   allergies?: string
   dob?: string
   notes?: string
+  // Chronic disease tracking
+  isChronic?: boolean
+  chronicConditions?: string[]
+  treatments?: ChronicTreatment[]
+  lastVisit?: string
+  nextAppointment?: string
+  loyaltyPharmacy?: boolean
+}
+
+export interface ChronicTreatment {
+  id: string
+  condition: string
+  medicines: { medicineId: string; name: string; dosage: string; frequency: string }[]
+  startDate: string
+  endDate?: string
+  doctorName: string
+  renewalDate?: string
+  notes?: string
+  status: 'active' | 'completed' | 'paused'
 }
 
 export interface Invoice {
