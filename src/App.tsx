@@ -29,6 +29,7 @@ import Billing from "./pages/Billing";
 import Reservations from "./pages/Reservations";
 import Promotions from "./pages/Promotions";
 import PharmacyAdmin from "./pages/PharmacyAdmin";
+import ChronicPatients from "./pages/ChronicPatients";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import "./i18n";
